@@ -1,14 +1,710 @@
-<!doctype html>
-<html lang="en">
+
+<!DOCTYPE html>
+<html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hello World</title>
-  <link href='/style.css' rel='stylesheet'>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, orientation=landscape">
+    <title>폰광판 v1.2 (4인 파크골프)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { touch-action: none; }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        .ad-banner { background-color: #e5e7eb; color: #9ca3af; display: flex; align-items: center; justify-content: center; height: 50px; font-weight: bold; font-size: 0.875rem; }
+    </style>
 </head>
-<body>
-  <h1>Hello, world!</h1>
-  <button onclick="console.log('hello');">Press me</button>
-  <script defer type="text/javascript" src="/main.js"></script>
+<body class="bg-gray-900 text-white flex flex-col h-screen overflow-hidden font-sans">
+
+    <div class="ad-banner w-full shrink-0">
+        <a href="https://test-0302.pages.dev/" target="_blank" rel="noopener noreferrer" class="text-gray-900 hover:text-blue-500">
+            Deployed at: https://test-0302.pages.dev/
+        </a>
+    </div>
+
+    <div class="flex justify-center items-center py-2 bg-gray-800 shrink-0 gap-4">
+        <select id="sportMode" class="bg-gray-700 text-white px-4 py-2 rounded-lg text-lg font-bold outline-none border border-gray-600 focus:border-blue-500">
+            <option value="football">⚽ 축구/풋살</option>
+            <option value="basketball">🏀 농구</option>
+            <option value="tabletennis">🏓 탁구</option>
+            <option value="tennis">🎾 테니스</option>
+            <option value="parkgolf">⛳ 파크골프</option>
+        </select>
+        <button id="btnVoice" onclick="toggleVoiceRecognition()" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-lg font-bold outline-none border border-gray-600 transition-colors shadow-lg">
+            🎤 음성 인식 켜기
+        </button>
+        <button onclick="document.getElementById('contactModal').classList.remove('hidden')" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-bold outline-none border border-gray-600 transition-colors shadow-lg">
+            📩 제휴 문의
+        </button>
+    </div>
+
+    <!-- 제휴 문의 모달 -->
+    <div id="contactModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+        <div class="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 border border-gray-600 relative">
+            <button onclick="closeContactModal()" class="absolute top-3 right-4 text-gray-400 hover:text-white text-2xl font-bold leading-none">&times;</button>
+            <h2 class="text-xl font-black text-white mb-1">📩 제휴 문의</h2>
+            <p class="text-gray-400 text-sm mb-4">광고·제휴·협업 문의를 남겨주세요.</p>
+
+            <form id="contactForm" action="https://formspree.io/f/xaqdgqbe" method="POST" onsubmit="handleFormSubmit(event)">
+                <div class="mb-3">
+                    <label class="block text-sm text-gray-300 mb-1">이름</label>
+                    <input type="text" name="name" required placeholder="홍길동"
+                        class="w-full bg-gray-700 text-white rounded-lg px-3 py-2 outline-none border border-gray-600 focus:border-blue-500 text-sm">
+                </div>
+                <div class="mb-3">
+                    <label class="block text-sm text-gray-300 mb-1">이메일</label>
+                    <input type="email" name="email" required placeholder="example@email.com"
+                        class="w-full bg-gray-700 text-white rounded-lg px-3 py-2 outline-none border border-gray-600 focus:border-blue-500 text-sm">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm text-gray-300 mb-1">문의 내용</label>
+                    <textarea name="message" required rows="4" placeholder="문의 내용을 입력해주세요."
+                        class="w-full bg-gray-700 text-white rounded-lg px-3 py-2 outline-none border border-gray-600 focus:border-blue-500 text-sm resize-none"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-lg transition-colors">
+                    전송하기
+                </button>
+            </form>
+
+            <div id="contactSuccess" class="hidden text-center py-6">
+                <div class="text-4xl mb-3">✅</div>
+                <p class="text-white font-bold text-lg">문의가 접수되었습니다!</p>
+                <p class="text-gray-400 text-sm mt-1">빠른 시일 내에 답변드리겠습니다.</p>
+                <button onclick="closeContactModal()" class="mt-4 bg-gray-700 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-bold">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 메인 2팀 레이아웃 (파크골프 아닌 경우) -->
+    <div id="main_content" class="flex-1 flex flex-row items-center justify-between px-4 relative">
+
+        <div class="flex flex-col items-center w-1/3">
+            <input type="text" id="teamA_name" value="HOME" maxlength="10" class="bg-transparent text-center text-3xl font-bold mb-2 w-full outline-none border-b-2 border-gray-700 focus:border-blue-500">
+            <div id="teamA_score" class="text-7xl font-black text-blue-400 my-4 tracking-tighter w-full text-center">0</div>
+
+            <div id="teamA_btns_default" class="flex gap-2">
+                <button onclick="changeScore('A', 1)" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl text-2xl font-bold shadow-lg">+1</button>
+                <button onclick="changeScore('A', -1)" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-3 rounded-xl text-xl font-bold">-1</button>
+            </div>
+            <div id="teamA_btns_basketball" class="hidden flex gap-2 flex-wrap justify-center">
+                <button onclick="changeScore('A', 1)" class="bg-blue-600 px-4 py-2 rounded-lg text-xl font-bold">+1</button>
+                <button onclick="changeScore('A', 2)" class="bg-blue-600 px-4 py-2 rounded-lg text-xl font-bold">+2</button>
+                <button onclick="changeScore('A', 3)" class="bg-blue-600 px-4 py-2 rounded-lg text-xl font-bold">+3</button>
+                <button onclick="changeScore('A', -1)" class="bg-gray-700 px-3 py-2 rounded-lg text-lg font-bold">-1</button>
+            </div>
+        </div>
+
+        <div class="flex flex-col items-center justify-center w-1/3 h-full">
+
+            <div id="center_period" class="text-center mb-2">
+                <input type="text" id="period_text" value="전/후반" class="bg-transparent text-center text-xl font-bold text-yellow-400 outline-none w-24 border-b border-dashed border-gray-600">
+            </div>
+
+            <div id="timer_section" class="flex flex-col items-center">
+                <div class="flex items-center text-6xl font-mono font-bold bg-black px-4 py-2 rounded-xl border-2 border-gray-700 cursor-pointer" onclick="editTimer()">
+                    <span id="min">15</span>:<span id="sec">00</span>
+                </div>
+                <div class="flex gap-4 mt-4">
+                    <button onclick="startTimer()" id="btnStart" class="bg-green-600 hover:bg-green-500 px-6 py-2 rounded-lg font-bold text-lg shadow">시작</button>
+                    <button onclick="resetTimer()" class="bg-red-600 hover:bg-red-500 px-4 py-2 rounded-lg font-bold text-lg shadow">리셋</button>
+                </div>
+            </div>
+
+            <div id="set_score_section" class="hidden flex gap-4 items-center mt-6 bg-gray-800 px-4 py-2 rounded-full border border-gray-600">
+                <button onclick="changeSet('A', 1)" class="text-blue-400 text-2xl font-bold">+</button>
+                <div class="text-xl font-bold">세트 <span id="setA">0</span> : <span id="setB">0</span></div>
+                <button onclick="changeSet('B', 1)" class="text-red-400 text-2xl font-bold">+</button>
+            </div>
+        </div>
+
+        <div class="flex flex-col items-center w-1/3">
+            <input type="text" id="teamB_name" value="AWAY" maxlength="10" class="bg-transparent text-center text-3xl font-bold mb-2 w-full outline-none border-b-2 border-gray-700 focus:border-red-500">
+            <div id="teamB_score" class="text-7xl font-black text-red-400 my-4 tracking-tighter w-full text-center">0</div>
+
+            <div id="teamB_btns_default" class="flex gap-2">
+                <button onclick="changeScore('B', -1)" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-3 rounded-xl text-xl font-bold">-1</button>
+                <button onclick="changeScore('B', 1)" class="bg-red-600 hover:bg-red-500 text-white px-6 py-3 rounded-xl text-2xl font-bold shadow-lg">+1</button>
+            </div>
+            <div id="teamB_btns_basketball" class="hidden flex gap-2 flex-wrap justify-center">
+                <button onclick="changeScore('B', -1)" class="bg-gray-700 px-3 py-2 rounded-lg text-lg font-bold">-1</button>
+                <button onclick="changeScore('B', 1)" class="bg-red-600 px-4 py-2 rounded-lg text-xl font-bold">+1</button>
+                <button onclick="changeScore('B', 2)" class="bg-red-600 px-4 py-2 rounded-lg text-xl font-bold">+2</button>
+                <button onclick="changeScore('B', 3)" class="bg-red-600 px-4 py-2 rounded-lg text-xl font-bold">+3</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 파크골프 4인 전용 레이아웃 -->
+    <div id="pg_main_section" class="flex hidden flex-1 flex-col w-full overflow-hidden">
+        <!-- 홀 네비게이션 헤더 -->
+        <div class="flex items-center justify-center gap-2 py-2 bg-gray-800 shrink-0 flex-wrap">
+            <button onclick="changeHole(-1)" class="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded-lg text-xl font-bold">&lt;</button>
+            <span id="pg_hole" class="text-3xl font-black text-green-400 mx-2 min-w-[120px] text-center">1 HOLE</span>
+            <button onclick="changeHole(1)" class="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded-lg text-xl font-bold">&gt;</button>
+            <span class="text-xl font-bold ml-4 text-yellow-300">PAR <span id="pg_par">3</span></span>
+            <button onclick="setPar(3)" class="bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded text-sm ml-2">Par 3</button>
+            <button onclick="setPar(4)" class="bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded text-sm">Par 4</button>
+            <button onclick="setPar(5)" class="bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded text-sm">Par 5</button>
+        </div>
+        <!-- 4인 플레이어 컬럼 -->
+        <div class="flex-1 flex flex-row">
+            <!-- 플레이어 1 -->
+            <div class="flex-1 flex flex-col items-center justify-center border-r border-gray-700 p-2">
+                <input type="text" id="pg_nameA" value="P1" maxlength="6"
+                    class="bg-transparent text-center text-lg font-bold mb-1 w-full outline-none border-b border-gray-600 focus:border-blue-400 text-blue-400">
+                <div id="pg_strokeA" class="text-6xl font-black text-blue-400 my-2">0</div>
+                <div class="flex gap-2">
+                    <button onclick="changePgScore(0, 1)"  class="bg-blue-600 hover:bg-blue-500 px-5 py-2 rounded-xl text-2xl font-bold shadow">+1</button>
+                    <button onclick="changePgScore(0, -1)" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-xl text-xl font-bold">-1</button>
+                </div>
+                <div class="mt-2 text-sm text-gray-400">총 타수 <span id="pg_totalA" class="text-white font-bold text-base">0</span></div>
+            </div>
+            <!-- 플레이어 2 -->
+            <div class="flex-1 flex flex-col items-center justify-center border-r border-gray-700 p-2">
+                <input type="text" id="pg_nameB" value="P2" maxlength="6"
+                    class="bg-transparent text-center text-lg font-bold mb-1 w-full outline-none border-b border-gray-600 focus:border-red-400 text-red-400">
+                <div id="pg_strokeB" class="text-6xl font-black text-red-400 my-2">0</div>
+                <div class="flex gap-2">
+                    <button onclick="changePgScore(1, 1)"  class="bg-red-600 hover:bg-red-500 px-5 py-2 rounded-xl text-2xl font-bold shadow">+1</button>
+                    <button onclick="changePgScore(1, -1)" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-xl text-xl font-bold">-1</button>
+                </div>
+                <div class="mt-2 text-sm text-gray-400">총 타수 <span id="pg_totalB" class="text-white font-bold text-base">0</span></div>
+            </div>
+            <!-- 플레이어 3 -->
+            <div class="flex-1 flex flex-col items-center justify-center border-r border-gray-700 p-2">
+                <input type="text" id="pg_nameC" value="P3" maxlength="6"
+                    class="bg-transparent text-center text-lg font-bold mb-1 w-full outline-none border-b border-gray-600 focus:border-yellow-400 text-yellow-400">
+                <div id="pg_strokeC" class="text-6xl font-black text-yellow-400 my-2">0</div>
+                <div class="flex gap-2">
+                    <button onclick="changePgScore(2, 1)"  class="bg-yellow-600 hover:bg-yellow-500 px-5 py-2 rounded-xl text-2xl font-bold shadow">+1</button>
+                    <button onclick="changePgScore(2, -1)" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-xl text-xl font-bold">-1</button>
+                </div>
+                <div class="mt-2 text-sm text-gray-400">총 타수 <span id="pg_totalC" class="text-white font-bold text-base">0</span></div>
+            </div>
+            <!-- 플레이어 4 -->
+            <div class="flex-1 flex flex-col items-center justify-center p-2">
+                <input type="text" id="pg_nameD" value="P4" maxlength="6"
+                    class="bg-transparent text-center text-lg font-bold mb-1 w-full outline-none border-b border-gray-600 focus:border-green-400 text-green-400">
+                <div id="pg_strokeD" class="text-6xl font-black text-green-400 my-2">0</div>
+                <div class="flex gap-2">
+                    <button onclick="changePgScore(3, 1)"  class="bg-green-600 hover:bg-green-500 px-5 py-2 rounded-xl text-2xl font-bold shadow">+1</button>
+                    <button onclick="changePgScore(3, -1)" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-xl text-xl font-bold">-1</button>
+                </div>
+                <div class="mt-2 text-sm text-gray-400">총 타수 <span id="pg_totalD" class="text-white font-bold text-base">0</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tactics_section" class="h-1/3 w-full bg-black border-t-4 border-gray-700 relative shrink-0 flex flex-col items-center">
+        <div class="absolute top-2 left-2 z-10 flex gap-2">
+            <input type="number" id="playerCount" value="5" class="w-16 bg-gray-800 text-center rounded text-sm text-white border border-gray-600" placeholder="인원">
+            <button onclick="initTacticsBoard()" class="bg-gray-600 px-2 py-1 rounded text-xs">적용(vs)</button>
+        </div>
+        <canvas id="tBoard" class="w-full h-full cursor-pointer"></canvas>
+    </div>
+
+    <div class="ad-banner w-full shrink-0">구글 애드센스 하단 배너 영역 (50px)</div>
+
+<script>
+    // --- 오디오 ---
+    let audioCtx = null;
+
+    function getAudioCtx() {
+        if (!audioCtx || audioCtx.state === 'closed') {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        return audioCtx;
+    }
+
+    // 버튼 클릭 효과음 (짧고 경쾌한 클릭)
+    function playClick() {
+        try {
+            const ctx = getAudioCtx();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(1100, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(700, ctx.currentTime + 0.06);
+            gain.gain.setValueAtTime(0.25, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.07);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.07);
+        } catch(e) {}
+    }
+
+    // 타이머 매초 틱 효과음 (부드럽고 조용한 틱)
+    function playTick() {
+        try {
+            const ctx = getAudioCtx();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = 480;
+            gain.gain.setValueAtTime(0.08, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.05);
+        } catch(e) {}
+    }
+
+    // 타이머 종료 알람 효과음
+    function playAlarm() {
+        try {
+            const ctx = getAudioCtx();
+            const osc = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(880, ctx.currentTime);
+            osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.5);
+            osc.frequency.setValueAtTime(880, ctx.currentTime + 1.0);
+            osc.frequency.setValueAtTime(1100, ctx.currentTime + 1.5);
+            gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+            osc.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 3);
+        } catch(e) {}
+    }
+
+    // 모든 버튼 클릭시 효과음 (이벤트 위임)
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('button')) playClick();
+    });
+
+    // --- 1. 상태 관리 ---
+    let state = {
+        mode: 'football',
+        scoreA: 0, scoreB: 0,
+        setA: 0, setB: 0,
+        tennisScores: ['0', '15', '30', '40', 'AD'],
+        tennisIndexA: 0, tennisIndexB: 0,
+        pgHole: 1,
+        pgPar: [3,4,4,5,3,4,4,5,4, 3,4,4,5,3,4,4,5,4], // 18홀 기본 파
+        pgStrokes: [Array(18).fill(0), Array(18).fill(0), Array(18).fill(0), Array(18).fill(0)] // 4인 타수
+    };
+
+    // --- 2. 타이머 로직 ---
+    let timerInterval = null;
+    let totalSeconds = 15 * 60;
+    let isRunning = false;
+
+    function updateTimerDisplay() {
+        const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+        const s = (totalSeconds % 60).toString().padStart(2, '0');
+        document.getElementById('min').innerText = m;
+        document.getElementById('sec').innerText = s;
+    }
+
+    function editTimer() {
+        if(isRunning) return;
+        let m = prompt("분을 입력하세요 (예: 15)", Math.floor(totalSeconds / 60));
+        let s = prompt("초를 입력하세요 (예: 0)", totalSeconds % 60);
+        if (m !== null && s !== null && !isNaN(m) && !isNaN(s)) {
+            totalSeconds = parseInt(m) * 60 + parseInt(s);
+            updateTimerDisplay();
+        }
+    }
+
+    function startTimer() {
+        if (isRunning) { // 일시정지
+            clearInterval(timerInterval);
+            isRunning = false;
+            document.getElementById('btnStart').innerText = "시작";
+            document.getElementById('btnStart').classList.replace('bg-yellow-600', 'bg-green-600');
+        } else { // 시작
+            if(totalSeconds <= 0) return;
+            isRunning = true;
+            document.getElementById('btnStart').innerText = "정지";
+            document.getElementById('btnStart').classList.replace('bg-green-600', 'bg-yellow-600');
+            timerInterval = setInterval(() => {
+                totalSeconds--;
+                updateTimerDisplay();
+                playTick(); // 매초 틱 효과음
+                if (totalSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    isRunning = false;
+                    document.getElementById('btnStart').innerText = "시작";
+                    document.getElementById('btnStart').classList.replace('bg-yellow-600', 'bg-green-600');
+                    playAlarm();
+                }
+            }, 1000);
+        }
+    }
+
+    function resetTimer() {
+        clearInterval(timerInterval);
+        isRunning = false;
+        totalSeconds = 15 * 60;
+        updateTimerDisplay();
+        document.getElementById('btnStart').innerText = "시작";
+        document.getElementById('btnStart').classList.replace('bg-yellow-600', 'bg-green-600');
+    }
+
+    // --- 3. 득점 로직 ---
+    function updateScoreDisplay() {
+        if (state.mode === 'tennis') {
+            document.getElementById('teamA_score').innerText = state.tennisScores[state.tennisIndexA];
+            document.getElementById('teamB_score').innerText = state.tennisScores[state.tennisIndexB];
+            if(state.tennisIndexA === 3 && state.tennisIndexB === 3) {
+                document.getElementById('teamA_score').innerText = "40";
+                document.getElementById('teamB_score').innerText = "40";
+            } else if (state.tennisIndexA === 4 && state.tennisIndexB === 4) {
+                state.tennisIndexA = 3; state.tennisIndexB = 3;
+                document.getElementById('teamA_score').innerText = "40";
+                document.getElementById('teamB_score').innerText = "40";
+            }
+        } else {
+            document.getElementById('teamA_score').innerText = state.scoreA;
+            document.getElementById('teamB_score').innerText = state.scoreB;
+        }
+    }
+
+    // 파크골프 4인 타수 표시 갱신
+    function updatePgDisplay() {
+        const strokeIds = ['pg_strokeA', 'pg_strokeB', 'pg_strokeC', 'pg_strokeD'];
+        const totalIds  = ['pg_totalA',  'pg_totalB',  'pg_totalC',  'pg_totalD'];
+        const hole = state.pgHole - 1;
+        state.pgStrokes.forEach((strokes, i) => {
+            document.getElementById(strokeIds[i]).innerText = strokes[hole];
+            document.getElementById(totalIds[i]).innerText  = strokes.reduce((a, b) => a + b, 0);
+        });
+    }
+
+    // 파크골프 타수 변경 (playerIdx: 0~3)
+    function changePgScore(playerIdx, val) {
+        const hole = state.pgHole - 1;
+        state.pgStrokes[playerIdx][hole] = Math.max(0, state.pgStrokes[playerIdx][hole] + val);
+        updatePgDisplay();
+    }
+
+    function changeScore(team, val) {
+        if (state.mode === 'tennis') {
+            if (team === 'A') {
+                if(val > 0 && state.tennisIndexA < 4) state.tennisIndexA++;
+                if(val < 0 && state.tennisIndexA > 0) state.tennisIndexA--;
+            } else {
+                if(val > 0 && state.tennisIndexB < 4) state.tennisIndexB++;
+                if(val < 0 && state.tennisIndexB > 0) state.tennisIndexB--;
+            }
+        } else {
+            if (team === 'A') state.scoreA = Math.max(0, state.scoreA + val);
+            if (team === 'B') state.scoreB = Math.max(0, state.scoreB + val);
+        }
+        updateScoreDisplay();
+    }
+
+    function changeSet(team, val) {
+        if(team === 'A') state.setA = Math.max(0, state.setA + val);
+        if(team === 'B') state.setB = Math.max(0, state.setB + val);
+        document.getElementById('setA').innerText = state.setA;
+        document.getElementById('setB').innerText = state.setB;
+    }
+
+    function changeHole(val) {
+        state.pgHole += val;
+        if(state.pgHole < 1)  state.pgHole = 18;
+        if(state.pgHole > 18) state.pgHole = 1;
+        document.getElementById('pg_hole').innerText = state.pgHole + " HOLE";
+        document.getElementById('pg_par').innerText  = state.pgPar[state.pgHole - 1];
+        updatePgDisplay();
+    }
+
+    function setPar(val) {
+        state.pgPar[state.pgHole - 1] = val;
+        document.getElementById('pg_par').innerText = val;
+    }
+
+    // --- 4. 종목 변경 (UI 토글) ---
+    document.getElementById('sportMode').addEventListener('change', (e) => {
+        state.mode = e.target.value;
+
+        state.scoreA = 0; state.scoreB = 0;
+        state.setA = 0; state.setB = 0;
+        state.tennisIndexA = 0; state.tennisIndexB = 0;
+        document.getElementById('setA').innerText = 0;
+        document.getElementById('setB').innerText = 0;
+
+        const mainContent = document.getElementById('main_content');
+        const pgMain      = document.getElementById('pg_main_section');
+        const btnA_def    = document.getElementById('teamA_btns_default');
+        const btnB_def    = document.getElementById('teamB_btns_default');
+        const btnA_bb     = document.getElementById('teamA_btns_basketball');
+        const btnB_bb     = document.getElementById('teamB_btns_basketball');
+        const setSection  = document.getElementById('set_score_section');
+        const tacticsSec  = document.getElementById('tactics_section');
+        const periodText  = document.getElementById('center_period');
+        const timerSec    = document.getElementById('timer_section');
+
+        // 공통 초기화
+        mainContent.classList.remove('hidden');
+        pgMain.classList.add('hidden');
+        btnA_bb.classList.add('hidden'); btnB_bb.classList.add('hidden');
+        btnA_def.classList.remove('hidden'); btnB_def.classList.remove('hidden');
+        setSection.classList.add('hidden');
+        tacticsSec.classList.remove('hidden');
+        periodText.classList.remove('hidden');
+        timerSec.classList.remove('hidden');
+        document.getElementById('period_text').value = "전/후반";
+
+        if (state.mode === 'basketball') {
+            btnA_def.classList.add('hidden'); btnB_def.classList.add('hidden');
+            btnA_bb.classList.remove('hidden'); btnB_bb.classList.remove('hidden');
+            document.getElementById('period_text').value = "1쿼터";
+            drawCourt('wood');
+        } else if (state.mode === 'tabletennis' || state.mode === 'tennis') {
+            setSection.classList.remove('hidden');
+            tacticsSec.classList.add('hidden');
+        } else if (state.mode === 'parkgolf') {
+            mainContent.classList.add('hidden');
+            pgMain.classList.remove('hidden');
+            tacticsSec.classList.add('hidden');
+            // 파크골프 상태 초기화
+            state.pgHole = 1;
+            state.pgStrokes = [Array(18).fill(0), Array(18).fill(0), Array(18).fill(0), Array(18).fill(0)];
+            document.getElementById('pg_hole').innerText = "1 HOLE";
+            document.getElementById('pg_par').innerText  = state.pgPar[0];
+            updatePgDisplay();
+        } else {
+            drawCourt('green');
+        }
+
+        updateScoreDisplay();
+    });
+
+    // --- 5. 미니 작전판 (Canvas) ---
+    const canvas = document.getElementById('tBoard');
+    const ctx = canvas.getContext('2d');
+    let players = [];
+    let isDragging = false;
+    let dragTarget = null;
+
+    function resizeCanvas() {
+        canvas.width  = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight;
+        if(state.mode === 'basketball') drawCourt('wood');
+        else drawCourt('green');
+        drawPlayers();
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    function drawCourt(type) {
+        if(!ctx) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (type === 'green') {
+            ctx.fillStyle = '#2e7d32';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(canvas.width/2, 0);
+            ctx.lineTo(canvas.width/2, canvas.height);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(canvas.width/2, canvas.height/2, 40, 0, Math.PI*2);
+            ctx.stroke();
+        } else if (type === 'wood') {
+            ctx.fillStyle = '#d7ccc8';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#3e2723';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(canvas.width/2, 0);
+            ctx.lineTo(canvas.width/2, canvas.height);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(canvas.width/2, canvas.height/2, 30, 0, Math.PI*2);
+            ctx.stroke();
+        }
+    }
+
+    function initTacticsBoard() {
+        const count = parseInt(document.getElementById('playerCount').value) || 5;
+        players = [];
+        const radius = 12;
+        for(let i=0; i<count; i++) {
+            players.push({ x: 50 + (i*10), y: canvas.height/2, color: '#3b82f6', r: radius });
+        }
+        for(let i=0; i<count; i++) {
+            players.push({ x: canvas.width - 50 - (i*10), y: canvas.height/2, color: '#ef4444', r: radius });
+        }
+        players.push({ x: canvas.width/2, y: canvas.height/2, color: '#ffffff', r: 8 });
+
+        drawCourt(state.mode === 'basketball' ? 'wood' : 'green');
+        drawPlayers();
+    }
+
+    function drawPlayers() {
+        players.forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+            ctx.fillStyle = p.color;
+            ctx.fill();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        });
+    }
+
+    function getMousePos(evt) {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+        const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+        return { x: clientX - rect.left, y: clientY - rect.top };
+    }
+
+    function startDrag(e) {
+        e.preventDefault();
+        const pos = getMousePos(e);
+        dragTarget = players.find(p => Math.hypot(p.x - pos.x, p.y - pos.y) < p.r * 1.5);
+        if(dragTarget) isDragging = true;
+    }
+
+    function doDrag(e) {
+        if(!isDragging || !dragTarget) return;
+        e.preventDefault();
+        const pos = getMousePos(e);
+        dragTarget.x = pos.x; dragTarget.y = pos.y;
+        drawCourt(state.mode === 'basketball' ? 'wood' : 'green');
+        drawPlayers();
+    }
+
+    function stopDrag(e) {
+        isDragging = false;
+        dragTarget = null;
+    }
+
+    canvas.addEventListener('mousedown', startDrag);
+    canvas.addEventListener('mousemove', doDrag);
+    canvas.addEventListener('mouseup', stopDrag);
+    canvas.addEventListener('mouseleave', stopDrag);
+
+    canvas.addEventListener('touchstart', startDrag, {passive: false});
+    canvas.addEventListener('touchmove', doDrag, {passive: false});
+    canvas.addEventListener('touchend', stopDrag);
+
+    // --- 6. AI 음성 인식 스코어링 로직 (Web Speech API) ---
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = null;
+    let isVoiceActive = false;
+
+    if (SpeechRecognition) {
+        recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.lang = 'ko-KR';
+        recognition.interimResults = false;
+
+        recognition.onresult = function(event) {
+            const lastIndex = event.results.length - 1;
+            const transcript = event.results[lastIndex][0].transcript;
+            console.log("인식된 음성: ", transcript);
+            processVoiceCommand(transcript);
+        };
+
+        recognition.onend = function() {
+            if (isVoiceActive) {
+                try { recognition.start(); } catch(e) {}
+            }
+        };
+
+        recognition.onerror = function(event) {
+            console.error("음성 인식 오류: ", event.error);
+        };
+    } else {
+        console.warn("이 브라우저는 Web Speech API를 지원하지 않습니다.");
+    }
+
+    function toggleVoiceRecognition() {
+        if (!recognition) {
+            alert("현재 브라우저에서는 음성 인식을 지원하지 않습니다. 구글 크롬(Chrome)을 이용해주세요!");
+            return;
+        }
+
+        const btnVoice = document.getElementById('btnVoice');
+
+        if (isVoiceActive) {
+            isVoiceActive = false;
+            recognition.stop();
+            btnVoice.innerHTML = "🎤 음성 인식 켜기";
+            btnVoice.classList.replace('bg-red-600', 'bg-gray-700');
+            btnVoice.classList.replace('hover:bg-red-500', 'hover:bg-gray-600');
+        } else {
+            isVoiceActive = true;
+            try { recognition.start(); } catch(e) {}
+            btnVoice.innerHTML = "🎙️ 듣는 중...";
+            btnVoice.classList.replace('bg-gray-700', 'bg-red-600');
+            btnVoice.classList.replace('hover:bg-gray-600', 'hover:bg-red-500');
+        }
+    }
+
+    function processVoiceCommand(text) {
+        const cleanText = text.replace(/\s+/g, '').toLowerCase();
+        let targetTeam = null;
+
+        if (/(홈|에이|a|블루|왼쪽)/.test(cleanText)) {
+            targetTeam = 'A';
+        } else if (/(어웨이|원정|비|b|레드|오른쪽)/.test(cleanText)) {
+            targetTeam = 'B';
+        }
+
+        if (targetTeam) {
+            let scoreVal = 1;
+            if (/(2점|이점)/.test(cleanText))          scoreVal = 2;
+            else if (/(3점|삼점)/.test(cleanText))     scoreVal = 3;
+            else if (/(빼|마이너스|취소|감점)/.test(cleanText)) scoreVal = -1;
+            changeScore(targetTeam, scoreVal);
+        }
+    }
+
+    // --- 제휴 문의 모달 ---
+    function closeContactModal() {
+        document.getElementById('contactModal').classList.add('hidden');
+        document.getElementById('contactForm').classList.remove('hidden');
+        document.getElementById('contactSuccess').classList.add('hidden');
+        document.getElementById('contactForm').reset();
+    }
+
+    async function handleFormSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerText = '전송 중...';
+
+        try {
+            const res = await fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: { 'Accept': 'application/json' }
+            });
+            if (res.ok) {
+                form.classList.add('hidden');
+                document.getElementById('contactSuccess').classList.remove('hidden');
+            } else {
+                alert('전송에 실패했습니다. 잠시 후 다시 시도해주세요.');
+                submitBtn.disabled = false;
+                submitBtn.innerText = '전송하기';
+            }
+        } catch(err) {
+            alert('네트워크 오류가 발생했습니다.');
+            submitBtn.disabled = false;
+            submitBtn.innerText = '전송하기';
+        }
+    }
+
+    // 초기화 실행
+    setTimeout(() => {
+        resizeCanvas();
+        initTacticsBoard();
+        updateTimerDisplay();
+    }, 100);
+
+</script>
 </body>
 </html>
